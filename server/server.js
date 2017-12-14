@@ -11,7 +11,7 @@ var {User} =require('./models/user');
 
 var app = express();
 const port = process.env.PORT || 3000;
-
+mongoose.set('debug', true)
 app.use(bodyParser.json());
 
 app.post('/todos', (req, res) => {
@@ -93,7 +93,24 @@ app.patch('/todos/:id', (req, res) =>{
 
 });
 
-
+app.post('/users', (req, res) => {
+    var body =_.pick(req.body, ['email', 'password']);
+    console.log(body);
+    var user = new User(body);
+    user.save().then(() =>{
+       return user.generateAuthToken();
+       console.log("i ");
+        //res.send(user);
+    }).then((token) =>{
+        console.log("i reachrd");
+        res.header('x-auth', token).send(user);
+    }).catch((e)=>{
+        console.log("error");
+        console.log(e);
+     res.status(400).send(e);
+    });
+  });
+  
 
 app.listen(port,() => {
     console.log(`started on port ${port}`)
