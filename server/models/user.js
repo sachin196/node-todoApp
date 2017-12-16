@@ -2,6 +2,8 @@ const mongoose =require('mongoose');
 const validator =require('validator');
  const jwt =require('jsonwebtoken');
  const _ =require('lodash');
+ const bcrypt=require('bcryptjs');
+
 var UserSchema = new mongoose.Schema({
         email:{
             type:String,
@@ -68,8 +70,48 @@ decoded = jwt.verify(token, 'abc123');
        'tokens.access':'auth'
        
    });
-
 };
+
+UserSchema.statics.findByCredentials = function (email, password) {
+  var User= this;
+
+  return User.findOne({email}).then((user) => {
+   if(!user) {
+    //    console.log('inside reject');
+       return Promise.reject();
+   }
+//    console.log('user found');
+   return new Promise((resolve, reject) => {
+    //    console.log('inside promise');
+       bcrypt.compare(password, user.password, (err, res) => {
+        // console.log('password not found');    
+        if(res){
+        // console.log('password  matched');
+       resolve(user);
+      } else {
+        //   console.log('password not matched');
+       reject();
+       }
+     });
+   });
+ });
+};
+
+
+UserSchema.pre('save', function (next){
+  var user = this;
+ if( user.isModified('password')){
+  
+bcrypt.genSalt(10, (err,  salt) => {
+    bcrypt.hash(user.password, salt, (err, hash) => {
+      user.password = hash;
+      next();
+    });
+    });
+ }  else {
+    next();
+ }
+});
 
 var User= mongoose.model('User', UserSchema)
 module.exports = {User};
